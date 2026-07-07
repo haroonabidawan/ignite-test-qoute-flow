@@ -1,0 +1,36 @@
+---
+description: Theme tokens, SSR/FOUC prevention, semantic styling
+globs: packages/ui/src/styles/**,packages/ui/src/components/ui/gluestack-ui-provider/**,apps/web/app/layout.tsx
+alwaysApply: false
+---
+
+# Styling & SSR
+
+## Semantic tokens only
+
+Use: `text-foreground`, `bg-primary`, `border-border`, `bg-sidebar`, `text-muted-foreground`.
+
+Never: `gray-500`, `red-600`, `neutral-*`, arbitrary hex in components.
+
+## CSS variables (critical)
+
+Theme tokens are defined in **two places** - keep them in sync:
+
+1. `packages/ui/src/components/ui/gluestack-ui-provider/config.ts`
+2. `packages/ui/src/styles/globals.css` (`:root` and `.dark`)
+
+GluestackUIProvider injects vars client-side. Without `globals.css` vars, first paint shows unstyled buttons and sidebar (FOUC).
+
+## Tailwind
+
+- Config: `packages/ui/tailwind.config.cjs`
+- Web app extends UI config + scans both packages in `apps/web/tailwind.config.cjs`
+- Prefer component `variant` / `size` props over redundant `className`
+
+## Global button fixes
+
+`globals.css` includes targeted rules for solid primary/destructive/secondary buttons. Subtle destructive actions should use `variant="ghost"` + `bg-destructive/10`, not solid `bg-destructive`.
+
+## Layout height
+
+Prefer `min-h-dvh` over `min-h-screen` for full-viewport auth/app shells.

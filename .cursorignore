@@ -1,0 +1,17 @@
+# Cursor indexing - exclude build artifacts and caches
+.next/
+out/
+.turbo/
+node_modules/
+.pnpm-store/
+dist/
+*.log
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+*.db
+apps/web/next-env.d.ts
+apps/web/nativewind-env.d.ts
+packages/ui/nativewind-env.d.ts

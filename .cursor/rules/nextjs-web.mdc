@@ -1,0 +1,50 @@
+---
+description: Next.js app conventions - thin routes, providers, webpack
+globs: apps/web/**/*
+alwaysApply: false
+---
+
+# apps/web (Next.js)
+
+## Role
+
+Thin renderer only. Each `page.tsx` imports a screen from `@repo/ui` and returns it.
+
+```tsx
+import { DashboardScreen } from "@repo/ui/screens/dashboard";
+
+export default function DashboardPage() {
+  return <DashboardScreen />;
+}
+```
+
+## App Router layout
+
+```
+app/layout.tsx              # fonts, globals.css, GluestackUIProvider, Providers
+app/(auth)/layout.tsx       # redirect if logged in
+app/(workspace)/layout.tsx  # AuthGuard + AppShell
+lib/providers.tsx           # ApiQueryProvider + NavigationProvider
+lib/api-config.ts           # API base URL + token storage
+```
+
+## Next.js specifics
+
+- Dev/build **must use webpack**: `next dev --webpack`, `next build --webpack`
+- `useSearchParams()` → wrap in `<Suspense>` with a sensible fallback
+- Env files: `.env*` gitignored; never commit secrets
+
+## Don't add here
+
+- Screen layouts, forms, tables (belong in `@repo/ui`)
+- Gluestack components (belong in `@repo/ui`)
+- Duplicate theme/CSS (import `@repo/ui/globals.css` in root layout only)
+
+## Do add here
+
+- API env config (`lib/api-config.ts`)
+- React Query provider wiring (`lib/providers.tsx`)
+
+## Local generated files (gitignored)
+
+- `next-env.d.ts`, `nativewind-env.d.ts`

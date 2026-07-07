@@ -1,0 +1,64 @@
+---
+description: FastAPI backend conventions (apps/apis)
+globs: apps/apis/**/*
+alwaysApply: false
+---
+
+# Backend (FastAPI) - `apps/apis`
+
+Laravel-style layout. Run: `pnpm dev:backend` → `uvicorn main:app` on port 8000.
+PostgreSQL via asyncpg; `db` service in `compose.yaml`. Alembic migrations run on API startup (DDL only).
+
+## Folder layout
+
+```
+apps/apis/
+  main.py                    # uvicorn entrypoint (imports bootstrap.app)
+  bootstrap/                 # FastAPI factory + ASGI app
+  config/                    # settings, security, exceptions, dependencies
+  app/                       # application code (Laravel app/)
+    models/                  # M - SQLAlchemy ORM
+    http/
+      controllers/           # C - handler classes (no route decorators)
+      dtos/                  # request/response Pydantic DTOs
+    helpers/                 # model → DTO serialization (totals, nesting)
+    repositories/            # data access - ALL SQL here
+    services/                # business logic
+  database/                  # connection, migrate.py, migrations/, seeders/
+  alembic.ini                # Alembic config (one revision per table)
+  routes/
+    api.py                   # all routes → app/http/controllers
+  prompts/
+```
+
+Flow: **controller → service → repository → model → db**.
+
+## Layer rules
+
+- **Controllers** (`app/http/controllers/`) - handler classes; delegate to services.
+- **Routes** (`routes/api.py`) - define paths and wire them to controller methods.
+- **Services** (`app/services/`) - business logic; raise `AppError`s.
+- **Repositories** (`app/repositories/`) - every query; subclass `BaseRepository[Model]`.
+- **Models** (`app/models/`) - SQLAlchemy ORM only.
+- **Schemas** (`app/http/dtos/`) - Pydantic request/response DTOs.
+- **Helpers** (`app/helpers/`) - model → response serialization (totals, nesting); `response.py` builds the `{ success, message, data }` envelope.
+- **Database** (`database/`) - connection + seeders live **outside** `app/`, like Laravel.
+
+## Rules
+
+- All config from `.env` - no defaults in `Settings` (see `.env.example`)
+- Default admin user in `database/seeders/user.py` only - not in env vars
+- AI calls server-side only; validate AI JSON before use
+- Prompt at `prompts/quotation-draft.md`
+- n8n webhook on approve - graceful failure; approval still succeeds
+- All API responses use `{ success, message, data }` via `app/helpers/response.py`; errors use the same shape with `success: false`
+
+## Env & deps
+
+- `pyproject.toml` packages: `app`, `bootstrap`, `config`, `database`, `routes`
+- Install: `uv pip install -e ".[dev,lint]"` from `apps/apis/`
+- Copy `.env.example` → `.env` before running
+- Migrations (DDL): `make migrate` / `make migrate:rollback` / `make migrate:reset` - runs in the `api` container (migrate also on API startup)
+- Reset schema: `make migrate:reset` or `make migrate:reset seed=1` (schema + seed)
+- Shorthand: `make migrate:reset-seed`
+- Seed only: `make seed` - runs in the `api` container (idempotent; not run on startup)

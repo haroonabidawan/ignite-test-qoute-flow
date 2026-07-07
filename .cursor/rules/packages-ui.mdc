@@ -1,0 +1,41 @@
+---
+description: @repo/ui package architecture - screens, store, components, exports
+globs: packages/ui/**/*
+alwaysApply: false
+---
+
+# packages/ui (@repo/ui)
+
+Read `.agents/skills/quoteflow/SKILL.md` before structural changes.
+
+## Structure
+
+```
+src/screens/           # Full pages (login, dashboard, quotations, …)
+src/components/layout/ # AppShell, AuthShell, auth-card-link
+src/components/forms/  # TextField, SelectField, shared fields
+src/components/ui/     # Gluestack primitives (+ index.web.tsx forks)
+src/navigation/        # useNavigate, usePathname (abstracts Next router)
+src/styles/globals.css # Tailwind + theme CSS variables
+```
+
+Types live in `@repo/types`. API integration lives in `@repo/api` (`packages/api/`).
+Web passes env-specific config from `apps/web/lib/api-config.ts`.
+
+## New screen checklist
+
+1. Create `src/screens/<name>-screen.tsx` (`"use client"`)
+2. Export path in `packages/ui/package.json` `"exports"`
+3. Add thin route in `apps/web/app/.../page.tsx`
+4. Use `@repo/ui` components - not raw `<div>` unless in `index.web.tsx`
+
+## Data hooks
+
+Screens use TanStack Query hooks (`useClients`, `useLogin`, …) from `@repo/api/hooks`. `ApiQueryProvider` is mounted from `apps/web/lib/providers.tsx`.
+Screens stay unaware of HTTP - swap the provider implementation without touching UI.
+
+## Layout
+
+- `AppShell` - sidebar + header; use `flex-row` where horizontal
+- `AuthShell` - split login/marketing layout
+- `Box` defaults to **column** flex - always set `flex-row` when needed

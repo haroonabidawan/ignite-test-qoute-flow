@@ -1,0 +1,41 @@
+---
+description: Git commit and branch conventions
+alwaysApply: false
+---
+
+# Git workflow
+
+## Only commit when asked
+
+Never create commits or PRs unless the user explicitly requests it.
+
+## Commit messages (Conventional Commits)
+
+Keep them short - a single clear sentence is enough. No long bodies.
+
+```
+<type>(<scope>): <subject>
+```
+
+**Types:** `feat`, `fix`, `refactor`, `perf`, `docs`, `chore`, `style`, `test`
+**Scopes:** `web`, `ui`, `backend`, `config`, `deps`
+
+```
+feat(ui): add quotation status filter
+fix(ui): strip multiline prop from web textarea
+chore(config): add cursor rules for the monorepo
+```
+
+## Branches
+
+```
+feat/ai-draft-endpoint
+fix/login-fouc
+chore/cursor-setup
+```
+
+## Don't
+
+- No attribution trailers (`Co-authored-by`, "Made with Cursor", etc.)
+- No `--no-verify` unless the user asks
+- Don't commit `.env`, secrets, or generated files (`.next/`, `next-env.d.ts`, `nativewind-env.d.ts`)

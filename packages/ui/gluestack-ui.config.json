@@ -1,0 +1,10 @@
+{
+  "ui": {
+    "path": "packages/ui",
+    "components": "src/components/ui"
+  },
+  "app": {
+    "path": "apps/web",
+    "components": "src/components"
+  }
+}

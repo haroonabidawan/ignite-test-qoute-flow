@@ -1,0 +1,39 @@
+---
+description: Core monorepo conventions, commands, and where code belongs
+alwaysApply: true
+---
+
+# QuoteFlow - core conventions
+
+Read `AGENTS.md` for the full map. Skills: `.agents/skills/quoteflow/SKILL.md`, `.agents/skills/gluestack-ui-v4/SKILL.md`.
+
+## Stack
+
+- **pnpm** + **Turbo** monorepo
+- **Next.js 16** (`apps/web`) with **webpack** (not Turbopack)
+- **@repo/ui** - Gluestack UI v4 + NativeWind + Tailwind 3.4
+
+## Commands
+
+```bash
+pnpm install && pnpm dev:web
+pnpm build && pnpm lint && pnpm typecheck
+pnpm ui:add <name>          # Gluestack component → packages/ui
+pnpm skills:install         # Refresh .agents/skills/gluestack-ui-v4
+```
+
+## Where to edit
+
+| Do | Don't |
+|----|-------|
+| Screens in `packages/ui/src/screens/` | Business UI in `apps/web/` |
+| Routes in `apps/web/app/**/page.tsx` | Duplicate components in apps/web |
+| Store hooks in `@repo/ui` | TanStack Query hooks + `ApiQueryProvider` in `packages/api/` |
+| Theme in `globals.css` + `config.ts` | Hardcoded hex colors |
+
+## Principles
+
+- Minimal, focused diffs; match existing naming and patterns
+- Avoid `any` / `unknown` in TypeScript
+- No git commits or PRs unless the user asks
+- Demo login: `admin@example.com` / `password123`

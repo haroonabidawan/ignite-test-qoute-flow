@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  },
+  "include": [
+    "src/screens/**/*.tsx",
+    "src/components/common/**/*.tsx",
+    "src/components/layout/**/*.tsx",
+    "src/components/forms/**/*.tsx",
+    "src/components/quotation/**/*.tsx",
+    "src/lib/**/*.ts",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": ["node_modules", "src/lib/__tests__/**"]
+}

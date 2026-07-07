@@ -1,0 +1,144 @@
+# QuoteFlow - full development environment (db + api + web).
+# Usage: docker compose up --build
+# Values come from an optional root .env (see .env.example).
+name: quoteflow
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-quoteflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quoteflow}
+      POSTGRES_DB: ${POSTGRES_DB:-quoteflow}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-quoteflow} -d ${POSTGRES_DB:-quoteflow}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/apis
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      n8n:
+        condition: service_started
+    environment:
+      APP_NAME: ${APP_NAME:-QuoteFlow API}
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      ENVIRONMENT: development
+      DEBUG: "true"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-quoteflow}:${POSTGRES_PASSWORD:-quoteflow}@db:5432/${POSTGRES_DB:-quoteflow}
+      SECRET_KEY: ${SECRET_KEY:-dev_secret_key_change_in_production_min_32_chars}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: "720"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3010,http://127.0.0.1:3010}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-quoteflow_token}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-10}
+      LOGIN_WINDOW_SECONDS: ${LOGIN_WINDOW_SECONDS:-300}
+      LOGIN_LOCKOUT_SECONDS: ${LOGIN_LOCKOUT_SECONDS:-900}
+      CURRENCY_CODE: ${CURRENCY_CODE:-USD}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.groq.com/openai/v1}
+      AI_MODEL: ${AI_MODEL:-llama-3.1-8b-instant}
+      AI_TIMEOUT_SECONDS: "30"
+      AI_MAX_REQUEST_CHARS: "4000"
+      AI_COOLDOWN_SECONDS: "15"
+      AI_USER_HOURLY_LIMIT: "10"
+      AI_USER_DAILY_LIMIT: "30"
+      AI_GLOBAL_DAILY_LIMIT: "200"
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/quotation-approved}
+      N8N_TIMEOUT_SECONDS: "10"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      # Live source for hot reload; keep container-side pycache out of the host.
+      - ./apps/apis:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    depends_on:
+      - mailpit
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: UTC
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-quoteflow_n8n_dev_key_32chars!!}
+      N8N_USER_MANAGEMENT_DISABLED: "true"
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./n8n/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - ./n8n/credentials.json:/import/credentials.json:ro
+      - ./n8n/quotation-approved.json:/import/quotation-approved.json:ro
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: development
+      # Web app calls FastAPI via NEXT_PUBLIC_API_URL (@repo/api + TanStack Query).
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Reliable file watching inside containers across host platforms.
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "${WEB_PORT:-3010}:3000"
+    volumes:
+      # Live source for hot reload; named volumes preserve installed deps.
+      - .:/app
+      - web-root-node-modules:/app/node_modules
+      - web-app-node-modules:/app/apps/web/node_modules
+      - web-ui-node-modules:/app/packages/ui/node_modules
+    command: sh -c "CI=true pnpm install --frozen-lockfile && pnpm dev:web"
+
+  docs:
+    build:
+      context: ./apps/docs
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${DOCS_PORT:-3100}:3100"
+    volumes:
+      - ./apps/docs/docs:/app/docs
+
+volumes:
+  db-data:
+  n8n-data:
+  web-root-node-modules:
+  web-app-node-modules:
+  web-ui-node-modules:

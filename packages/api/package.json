@@ -1,0 +1,33 @@
+{
+  "name": "@repo/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/lib/client/index.ts",
+    "./mappers": "./src/lib/mappers/index.ts",
+    "./storage": "./src/lib/storage/index.ts",
+    "./context": "./src/lib/context/use-api.ts",
+    "./hooks": "./src/hooks.ts",
+    "./auth": "./src/modules/auth/index.ts",
+    "./clients": "./src/modules/clients/index.ts",
+    "./quotations": "./src/modules/quotations/index.ts",
+    "./provider": "./src/lib/query/provider.tsx",
+    "./config": "./src/modules/config/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "workspace:*",
+    "@tanstack/react-query": "^5.90.12"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,62 @@
+---
+description: TypeScript standards for the monorepo
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# TypeScript
+
+## Strictness
+
+- Avoid `any` and `unknown` - use a proper type/interface, or narrow `unknown` before use
+- Avoid non-null assertions (`!`) and `as` casts; if unavoidable, add a short comment saying why
+- Annotate return types on exported functions
+- Use `type` imports for type-only symbols: `import { type Foo } from "./foo"`
+
+## Naming
+
+| Thing | Convention | Example |
+|-------|-----------|---------|
+| Variables, functions | `camelCase` | `getClientById` |
+| Components | `PascalCase` | `QuotationCard` |
+| Types, interfaces | `PascalCase` | `QuotationStatus` |
+| Constants | `SCREAMING_SNAKE_CASE` | `DEMO_PASSWORD` |
+| Component files | `kebab-case` | `login-screen.tsx` |
+| Util / hook files | `kebab-case` or `camelCase` | `use-app-store.ts` |
+
+## Imports
+
+- Apps import `@repo/ui/*` package exports - not deep paths into `packages/ui/src`
+- Never use relative paths to cross a package boundary
+
+## Client components
+
+- `"use client"` on interactive screens, store, navigation, Gluestack provider
+- Route `page.tsx` can stay a server component when it only re-exports a client screen
+
+## Error handling
+
+```typescript
+// ✅ typed, never swallowed
+try {
+  return await generateAiDraft(request);
+} catch (error: unknown) {
+  if (error instanceof AiDraftError) throw error;
+  throw new Error("AI draft failed", { cause: error });
+}
+
+// ❌ swallowed
+try { return await generateAiDraft(request); } catch (e) { return null; }
+```
+
+## Shared types
+
+Domain models live in `packages/ui/src/types/models.ts`. Reuse them; don't redeclare.
+
+## Checks
+
+```bash
+pnpm typecheck    # from root
+```
+
+Fix type errors before finishing; `ignoreBuildErrors` is not a license to ship broken types.

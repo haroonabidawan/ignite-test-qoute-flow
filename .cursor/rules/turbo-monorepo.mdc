@@ -1,0 +1,33 @@
+---
+description: Turbo, pnpm workspace, and monorepo script conventions
+globs: package.json,turbo.json,pnpm-workspace.yaml,pnpm-lock.yaml,apps/*/package.json,packages/*/package.json
+alwaysApply: false
+---
+
+# Turbo monorepo
+
+## Workspace
+
+- Root `package.json` orchestrates via **Turbo**
+- Workspaces: `apps/*`, `packages/*` (`pnpm-workspace.yaml`)
+- Internal deps: `"@repo/ui": "workspace:*"`
+
+## Scripts (run from root)
+
+| Script | Effect |
+|--------|--------|
+| `pnpm dev:web` | `turbo dev --filter=web` |
+| `pnpm build` | All packages build (dependsOn `^build`) |
+| `pnpm lint` / `pnpm typecheck` | Per-package via Turbo |
+
+## Adding packages
+
+- App → `apps/<name>/package.json` + register in workspace
+- Shared lib → `packages/<name>/`
+- Add Turbo tasks in `turbo.json` if new task types appear
+
+## Don't
+
+- Use npm or yarn
+- Put app-specific UI in `apps/web/components` - use `@repo/ui`
+- Edit `pnpm-lock.yaml` by hand

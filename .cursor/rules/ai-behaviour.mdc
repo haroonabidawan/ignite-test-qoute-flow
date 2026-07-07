@@ -1,0 +1,35 @@
+---
+description: How the AI assistant should generate code in this repo
+alwaysApply: true
+---
+
+# AI behaviour
+
+## Always
+
+- Follow file-location rules in `project-core.mdc` and `packages-ui.mdc`
+- Reuse existing components (`@repo/ui`, Gluestack) - don't invent parallel ones
+- Fully type TypeScript; add loading + error states to data-fetching UI
+- Keep diffs minimal and match existing patterns
+- Read the relevant skill before UI/structural work (`.agents/skills/quoteflow`, `gluestack-ui-v4`)
+
+## Never
+
+- Create new packages or apps unless explicitly asked
+- Add dependencies without saying so (and prefer asking first)
+- Use `any` / `@ts-ignore` / `!` without a reason comment
+- Put shared UI in `apps/web` - it belongs in `@repo/ui`
+- Call the AI provider from the frontend or expose its key
+- Commit or open PRs unless the user explicitly asks
+
+## Web forks
+
+Interactive primitives have `index.web.tsx`. Strip React Native-only props
+(`multiline`, `onPress`, `numberOfLines`, …) before spreading onto DOM elements -
+see `web-platform-forks.mdc`.
+
+## Response format
+
+- Lead with the change; keep explanation short
+- Note which file each change belongs to
+- End with a brief summary (≤3 bullets) of what changed and why

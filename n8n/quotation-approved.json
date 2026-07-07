@@ -1,0 +1,86 @@
+{
+  "name": "QuoteFlow - Quotation Approved",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quotation-approved",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "f6a7b8c9-d0e1-2345-f012-456789012345"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Source for the n8n Code node - kept in repo for readability; copied into quotation-approved.json\nconst raw = $input.first().json;\nconst root = raw.body ?? raw;\n\nconst quotation = root.quotation ?? root;\nconst client = root.client ?? {};\nconst currency = root.currency_code ?? \"USD\";\n\nconst fmt = (amount) =>\n  new Intl.NumberFormat(\"en-US\", {\n    style: \"currency\",\n    currency,\n  }).format(Number(amount) || 0);\n\nconst fmtDate = (value) => {\n  if (!value) return \"-\";\n  return new Intl.DateTimeFormat(\"en-US\", {\n    dateStyle: \"medium\",\n    timeStyle: \"short\",\n  }).format(new Date(value));\n};\n\nconst esc = (value) =>\n  String(value ?? \"\")\n    .replace(/&/g, \"&amp;\")\n    .replace(/</g, \"&lt;\")\n    .replace(/>/g, \"&gt;\")\n    .replace(/\"/g, \"&quot;\");\n\nconst items = Array.isArray(quotation.items) ? quotation.items : [];\nconst itemRows = items.length\n  ? items\n      .map(\n        (item) => `\n      <tr>\n        <td style=\"padding:12px 16px;border-bottom:1px solid #e2e8f0;\">\n          <strong style=\"color:#0f172a;display:block;\">${esc(item.title)}</strong>\n          ${\n            item.description\n              ? `<span style=\"color:#64748b;font-size:13px;\">${esc(item.description)}</span>`\n              : \"\"\n          }\n        </td>\n        <td style=\"padding:12px 16px;border-bottom:1px solid #e2e8f0;text-align:center;color:#334155;\">${esc(item.quantity)}</td>\n        <td style=\"padding:12px 16px;border-bottom:1px solid #e2e8f0;text-align:right;color:#334155;\">${\n          item.unit_price == null ? \"TBD\" : fmt(item.unit_price)\n        }</td>\n        <td style=\"padding:12px 16px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;color:#0f172a;\">${fmt(item.total)}</td>\n      </tr>`\n      )\n      .join(\"\")\n  : `<tr><td colspan=\"4\" style=\"padding:16px;color:#64748b;text-align:center;\">No line items</td></tr>`;\n\nconst estimatedHours = items.reduce(\n  (sum, item) => sum + (Number(item.estimated_hours) || 0),\n  0\n);\n\nconst html = `<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>\n<body style=\"margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;\">\n  <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#f1f5f9;padding:32px 16px;\">\n    <tr><td align=\"center\">\n      <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:640px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.08);\">\n        <tr>\n          <td style=\"background:linear-gradient(135deg,#0f766e,#059669);padding:28px 32px;\">\n            <p style=\"margin:0 0 8px;color:#ccfbf1;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;\">QuoteFlow</p>\n            <h1 style=\"margin:0;color:#ffffff;font-size:28px;line-height:1.2;\">Quotation Approved</h1>\n            <p style=\"margin:12px 0 0;color:#d1fae5;font-size:15px;\">${esc(quotation.title)}</p>\n          </td>\n        </tr>\n        <tr>\n          <td style=\"padding:32px;\">\n            <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"margin-bottom:24px;\">\n              <tr>\n                <td style=\"width:50%;padding-right:8px;vertical-align:top;\">\n                  <div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;\">\n                    <p style=\"margin:0 0 4px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;\">Client</p>\n                    <p style=\"margin:0;color:#0f172a;font-size:16px;font-weight:600;\">${esc(client.name || \"Unknown client\")}</p>\n                    ${client.company ? `<p style=\"margin:4px 0 0;color:#475569;font-size:14px;\">${esc(client.company)}</p>` : \"\"}\n                    ${client.email ? `<p style=\"margin:8px 0 0;color:#059669;font-size:14px;\">${esc(client.email)}</p>` : \"\"}\n                    ${client.phone ? `<p style=\"margin:4px 0 0;color:#475569;font-size:14px;\">${esc(client.phone)}</p>` : \"\"}\n                  </div>\n                </td>\n                <td style=\"width:50%;padding-left:8px;vertical-align:top;\">\n                  <div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;\">\n                    <p style=\"margin:0 0 4px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;\">Details</p>\n                    <p style=\"margin:0;color:#0f172a;font-size:14px;\"><strong>Quote ID:</strong> ${esc(quotation.id)}</p>\n                    <p style=\"margin:8px 0 0;color:#0f172a;font-size:14px;\"><strong>Status:</strong> ${esc(quotation.status)}</p>\n                    <p style=\"margin:8px 0 0;color:#0f172a;font-size:14px;\"><strong>Created:</strong> ${fmtDate(quotation.created_at)}</p>\n                    <p style=\"margin:8px 0 0;color:#0f172a;font-size:14px;\"><strong>Approved:</strong> ${fmtDate(new Date().toISOString())}</p>\n                  </div>\n                </td>\n              </tr>\n            </table>\n\n            <h2 style=\"margin:0 0 12px;color:#0f172a;font-size:18px;\">Line items (${items.length})</h2>\n            <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:24px;\">\n              <thead>\n                <tr style=\"background:#f8fafc;\">\n                  <th align=\"left\" style=\"padding:12px 16px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;\">Item</th>\n                  <th align=\"center\" style=\"padding:12px 16px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;\">Qty</th>\n                  <th align=\"right\" style=\"padding:12px 16px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;\">Rate</th>\n                  <th align=\"right\" style=\"padding:12px 16px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;\">Amount</th>\n                </tr>\n              </thead>\n              <tbody>${itemRows}</tbody>\n            </table>\n\n            <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\n              <tr>\n                <td style=\"padding:20px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;\">\n                  <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\n                    <tr>\n                      <td style=\"color:#065f46;font-size:14px;\">Grand total (${esc(currency)})</td>\n                      <td align=\"right\" style=\"color:#065f46;font-size:28px;font-weight:700;\">${fmt(quotation.total)}</td>\n                    </tr>\n                    ${\n                      estimatedHours\n                        ? `<tr><td style=\"padding-top:8px;color:#047857;font-size:13px;\">Estimated hours</td><td align=\"right\" style=\"padding-top:8px;color:#047857;font-size:13px;font-weight:600;\">${estimatedHours}h</td></tr>`\n                        : \"\"\n                    }\n                  </table>\n                </td>\n              </tr>\n            </table>\n          </td>\n        </tr>\n        <tr>\n          <td style=\"padding:20px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;text-align:center;\">\n            Automated notification from QuoteFlow\n          </td>\n        </tr>\n      </table>\n    </td></tr>\n  </table>\n</body>\n</html>`;\n\nconst text = [\n  `Quotation approved: ${quotation.title}`,\n  `Client: ${client.name || \"Unknown\"}${client.company ? ` (${client.company})` : \"\"}`,\n  client.email ? `Email: ${client.email}` : null,\n  `Total: ${fmt(quotation.total)}`,\n  `Items: ${items.length}`,\n  ...items.map(\n    (item) =>\n      `- ${item.title} x${item.quantity} @ ${item.unit_price == null ? \"TBD\" : fmt(item.unit_price)} = ${fmt(item.total)}`\n  ),\n]\n  .filter(Boolean)\n  .join(\"\\n\");\n\nreturn [\n  {\n    json: {\n      subject: `Quotation approved: ${quotation.title}`,\n      html,\n      text,\n    },\n  },\n];\n"
+      },
+      "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+      "name": "Build Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "quoteflow@localhost",
+        "toEmail": "admin@example.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [680, 300],
+      "credentials": {
+        "smtp": {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "name": "Mailpit SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "quoteflow-quotation-approved-v2",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "tags": []
+}

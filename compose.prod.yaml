@@ -1,0 +1,140 @@
+# QuoteFlow - production stack (Postgres + API + web + n8n + Mailpit).
+# Usage: cp .env.prod.example .env && make prod-up-build
+#
+# Postgres has NO host port - api connects via Docker network (db:5432).
+# On shared Dokploy servers, host ports default to high ports (13000/18000/…) to avoid clashes.
+name: quoteflow-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-quoteflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-quoteflow}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-quoteflow} -d ${POSTGRES_DB:-quoteflow}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_HOST_PORT:-11025}:1025"
+      - "${MAILPIT_UI_HOST_PORT:-18025}:8025"
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    depends_on:
+      - mailpit
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      WEBHOOK_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: UTC
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env}
+      N8N_USER_MANAGEMENT_DISABLED: "true"
+    ports:
+      - "${N8N_HOST_PORT:-15678}:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./n8n/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - ./n8n/credentials.json:/import/credentials.json:ro
+      - ./n8n/quotation-approved.json:/import/quotation-approved.json:ro
+
+  api:
+    build:
+      context: ./apps/apis
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      n8n:
+        condition: service_started
+    environment:
+      APP_NAME: ${APP_NAME:-QuoteFlow API}
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      ENVIRONMENT: production
+      DEBUG: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-quoteflow}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-quoteflow}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env (min 32 chars)}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-720}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:13000,http://127.0.0.1:13000}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-quoteflow_token}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-10}
+      LOGIN_WINDOW_SECONDS: ${LOGIN_WINDOW_SECONDS:-300}
+      LOGIN_LOCKOUT_SECONDS: ${LOGIN_LOCKOUT_SECONDS:-900}
+      CURRENCY_CODE: ${CURRENCY_CODE:-USD}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.groq.com/openai/v1}
+      AI_MODEL: ${AI_MODEL:-llama-3.1-8b-instant}
+      AI_TIMEOUT_SECONDS: "30"
+      AI_MAX_REQUEST_CHARS: "4000"
+      AI_COOLDOWN_SECONDS: "15"
+      AI_USER_HOURLY_LIMIT: "10"
+      AI_USER_DAILY_LIMIT: "30"
+      AI_GLOBAL_DAILY_LIMIT: "200"
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/quotation-approved}
+      N8N_TIMEOUT_SECONDS: "10"
+    ports:
+      - "${API_HOST_PORT:-18000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8000/health'')"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "${WEB_HOST_PORT:-13000}:3000"
+
+  docs:
+    build:
+      context: ./apps/docs
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${DOCS_HOST_PORT:-13100}:80"
+
+volumes:
+  db-data:
+  n8n-data:

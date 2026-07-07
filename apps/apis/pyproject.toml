@@ -1,0 +1,94 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quoteflow-api"
+version = "1.0.0"
+description = "QuoteFlow REST API - FastAPI + PostgreSQL (AI-assisted quotation builder)"
+requires-python = ">=3.12"
+
+dependencies = [
+  # Web framework
+  "fastapi==0.111.0",
+  "uvicorn[standard]==0.29.0",
+
+  # Database (async PostgreSQL; aiosqlite kept for lightweight local/test runs)
+  "sqlalchemy[asyncio]==2.0.30",
+  "asyncpg==0.29.0",
+  "aiosqlite==0.20.0",
+  "alembic==1.13.1",
+
+  # Auth
+  "passlib[bcrypt]==1.7.4",
+  # passlib 1.7.4 is incompatible with bcrypt >= 4.1 (removed __about__ + 72-byte
+  # guard breaks passlib's backend probe). Pin to the last compatible release.
+  "bcrypt==4.0.1",
+  "python-jose[cryptography]==3.3.0",
+
+  # Config / validation
+  "pydantic[email]==2.7.1",
+  "pydantic-settings==2.2.1",
+  "python-dotenv==1.0.1",
+
+  # Outbound HTTP (AI provider + n8n webhook)
+  "httpx==0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.2.2",
+  "pytest-asyncio==0.23.7",
+  "httpx==0.27.0",
+]
+lint = [
+  "ruff==0.4.7",
+  "mypy==1.10.0",
+  "black==24.4.2",
+  "sqlalchemy[mypy]==2.0.30",
+  "types-passlib",
+  "types-python-jose",
+]
+
+[project.scripts]
+quoteflow-test = "pytest:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "bootstrap", "config", "database", "routes"]
+
+# ── pytest ─────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+# ── ruff ──────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["app", "bootstrap", "config", "database", "routes", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "SIM", "S", "RUF"]
+ignore = ["S104", "B008"]  # S104: bind all interfaces (Docker), B008: Depends() calls
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "bootstrap", "config", "database", "routes"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "ANN", "E501", "E402"]
+"database/migrations/**" = ["UP007", "UP035"]
+# token_type strings are token kinds, not passwords (S106 false positive)
+"config/security.py" = ["S106"]
+
+# ── mypy ──────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "."
+strict = true
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+ignore_missing_imports = true
+
+# ── black ─────────────────────────────────────────────────────────────────
+[tool.black]
+line-length = 88
+target-version = ["py312"]

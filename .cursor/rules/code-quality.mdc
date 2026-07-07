@@ -1,0 +1,35 @@
+---
+description: Code quality limits - file size, no legacy shims, clean diffs
+alwaysApply: true
+---
+
+# Code quality
+
+## File length
+
+- Target ≤150 lines, aim to stay well under ~200 per file
+- When a file grows, split by responsibility:
+  - Fat screen → extract child components into a `components/` folder
+  - Fat store → split selectors/actions into focused modules
+  - Fat service (backend) → `service/create.py`, `service/search.py`, etc.
+- Never hit the target by deleting error handling, types, or needed docs - split instead
+
+## No legacy / dead code
+
+This is a fresh assessment project - do not keep backwards-compat shims.
+
+- No routes/exports named `legacy`, `old`, `deprecated`
+- When replacing something, migrate all callers and delete the old path - no stubs
+- No parallel fields/DTOs for the same concept
+- No commented-out blocks left behind
+
+## Clean diffs
+
+- Match existing patterns and naming; don't refactor unrelated code
+- Keep changes minimal and focused on the request
+- No `console.log` in committed code - use `console.warn` / `console.error` only when needed
+
+## Before finishing
+
+- `pnpm lint && pnpm typecheck` clean on touched packages
+- No new lint warnings introduced

@@ -1,0 +1,39 @@
+---
+description: Security standards - secrets, AI keys, input validation
+alwaysApply: true
+---
+
+# Security
+
+## Secrets
+
+- Zero secrets in source code - no API keys, tokens, or connection strings in any file
+- All secrets via environment variables; `.env*` is gitignored
+- Keep a `.env.example` with placeholder values only, kept current
+
+## AI provider keys (critical for this test)
+
+Per `Technical-Test.md`:
+
+- **AI is called from the backend only** - never call the AI provider from `apps/web`
+- **Never expose the AI API key to the frontend** (no `NEXT_PUBLIC_` AI keys)
+- **Validate the AI JSON response before saving** - reject malformed shapes
+- If the AI doesn't know a price, store `null` - never invent prices
+
+## Frontend safety
+
+- Only `NEXT_PUBLIC_`-prefixed env vars reach the browser - nothing else
+- Never `dangerouslySetInnerHTML` with user or AI content
+- No `eval()`
+
+## Backend safety (`apps/apis`)
+
+- Validate + sanitise all input with Pydantic
+- Parameterised queries / ORM only - never string-built SQL
+- Never log passwords, tokens, or PII
+- Handle AI and n8n webhook failures gracefully (timeouts, non-200, invalid JSON)
+
+## Flag these if seen
+
+Hardcoded key/token/password, AI call from frontend, unvalidated AI JSON persisted,
+SQL built by string concatenation, secrets under `NEXT_PUBLIC_`.

@@ -1,0 +1,46 @@
+---
+description: Web platform forks - index.web.tsx, DOM props, RN prop stripping
+globs: "**/index.web.tsx,packages/ui/src/components/**"
+alwaysApply: false
+---
+
+# Web platform forks
+
+## Pattern
+
+| File | Renders |
+|------|---------|
+| `index.tsx` | React Native via Gluestack creator |
+| `index.web.tsx` | HTML elements for Next.js |
+
+`packages/ui/package.json` exports must point to `.web.tsx` for web-safe components.
+
+## RN → DOM mapping
+
+| React Native | Web |
+|--------------|-----|
+| `onPress` | `onClick` |
+| `secureTextEntry` | `type="password"` |
+| `keyboardType="email-address"` | `type="email"` |
+| `numberOfLines` | `rows` on `<textarea>` |
+| `multiline` | omit (textarea is multiline by default) |
+
+**Never spread unknown props onto DOM nodes.** Destructure RN-only props first.
+
+```tsx
+// ✅ GOOD
+function TextareaInput({ multiline: _m, numberOfLines, rows, ...props }, ref) {
+  return <textarea rows={rows ?? numberOfLines ?? 4} {...props} ref={ref} />;
+}
+```
+
+## When adding Gluestack components
+
+1. `pnpm ui:add <name>`
+2. If used on web, add/verify `index.web.tsx`
+3. Update `@repo/ui` export to `.web.tsx`
+4. Test in browser - watch console for invalid DOM attribute warnings
+
+## Icons on web
+
+Use `packages/ui/src/components/ui/icon/index.web.tsx` for SVG icons with `stroke="currentColor"`.

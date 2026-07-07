@@ -1,0 +1,58 @@
+{
+  "name": "ignite-test",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=web",
+    "dev:docs": "turbo dev --filter=docs",
+    "dev:backend": "cd apps/apis && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "migrate:backend": "docker compose run --rm -T api python -m alembic upgrade head",
+    "migrate:reset:backend": "docker compose run --rm -T api python -m alembic downgrade base && docker compose run --rm -T api python -m alembic upgrade head && docker compose run --rm -T api python -m database.seed",
+    "seed:backend": "docker compose run --rm -T api python -m database.seed",
+    "ui:add": "pnpm dlx gluestack-ui@latest add --use-pnpm -y",
+    "ui:add:all": "pnpm dlx gluestack-ui@latest add --all --use-pnpm -y",
+    "skills:install": "pnpm dlx skills add gluestack/agent-skills@gluestack-ui-v4 -y",
+    "postinstall": "node -e \"try{require('fs').accessSync('.agents/skills/gluestack-ui-v4/SKILL.md')}catch(e){console.warn('\\n⚠ Gluestack skills missing. Run: pnpm skills:install\\n')}\"",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "lint:backend": "cd apps/apis && uv sync --extra lint --quiet && uv run --extra lint ruff check .",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:backend": "cd apps/apis && uv sync --extra dev --quiet && uv run --extra dev pytest",
+    "test:ui": "pnpm --filter @repo/ui test",
+    "format": "prettier --write . && pnpm format:backend",
+    "format:check": "prettier --check .",
+    "format:backend": "cd apps/apis && uv sync --extra lint --quiet && uv run --extra lint black . && uv run --extra lint ruff check --fix . && uv run --extra lint ruff format .",
+    "validate": "bash scripts/validate.sh",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,css,md,yml,yaml}": "prettier --write",
+    "apps/apis/**/*.py": "bash scripts/format-python-staged.sh"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.4"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "pnpm": {
+    "overrides": {
+      "react-native-web": "^0.21.2",
+      "react-native-reanimated": "~3.16.7"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "react": "19",
+        "@types/react": "19",
+        "react-native": "0.76",
+        "react-native-reanimated": "3"
+      }
+    }
+  }
+}

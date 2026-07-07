@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="QuoteFlow">
+  <defs>
+    <linearGradient id="bg" x1="18%" y1="12%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="55%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#115e59" />
+    </linearGradient>
+    <linearGradient id="mark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#ccfbf1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <text
+    x="178"
+    y="332"
+    fill="url(#mark)"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="210"
+    font-style="italic"
+    font-weight="700"
+  >
+    Q
+  </text>
+  <text
+    x="292"
+    y="332"
+    fill="url(#mark)"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="168"
+    font-weight="600"
+  >
+    F
+  </text>
+</svg>

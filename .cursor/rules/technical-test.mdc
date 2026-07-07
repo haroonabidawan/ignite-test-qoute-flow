@@ -1,0 +1,33 @@
+---
+description: Technical test requirements and scoring scope for QuoteFlow
+globs: Technical-Test.md,AGENTS.md,README.md
+alwaysApply: false
+---
+
+# Technical test scope
+
+Source of truth: `Technical-Test.md`.
+
+## Required features
+
+- Login (seed user OK)
+- Clients CRUD (name, company, email, phone, notes)
+- Quotations CRUD + statuses: Draft, Sent, Approved, Rejected
+- Quotation items with auto-calculated totals
+- **AI draft** from client request text (backend-only AI call, validated JSON)
+- **n8n webhook** when status → Approved
+
+## Backend rules (when implementing)
+
+- AI called from backend only - never expose API keys in frontend
+- Validate AI JSON before save; `unit_price: null` when unknown
+- Store prompt in `prompts/quotation-draft.md`
+- Suggested API: see Technical-Test.md §5
+
+## Submit artifacts
+
+- README, demo login, n8n workflow JSON, AI prompt file, optional `/ai-notes.md`
+
+## Current status
+
+Web app is wired to FastAPI via `@repo/api` + TanStack Query. See `AUDIT.md` for gaps vs `Technical-Test.md` and enterprise issues.

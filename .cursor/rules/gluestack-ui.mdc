@@ -1,0 +1,41 @@
+---
+description: Gluestack UI v4 skills, components, and styling for @repo/ui + apps/web
+globs: packages/ui/**/*,apps/web/**/*
+alwaysApply: false
+---
+
+# Gluestack UI v4
+
+## Read first
+
+1. `.agents/skills/gluestack-ui-v4/SKILL.md` (+ sub-skills: setup, components, styling, variants)
+2. `.agents/skills/quoteflow/SKILL.md` - this repo’s web forks and layout gotchas
+3. Docs: https://v4.gluestack.io/ui/docs/home/getting-started/installation
+
+Install/refresh skills: `pnpm skills:install`
+
+## Architecture
+
+- All UI in `packages/ui` - screens, forms, Gluestack components
+- `apps/web` - thin Next.js routes only
+- Add components: `pnpm ui:add <name>` from repo root
+- Config: `gluestack-ui.config.json`
+
+## Styling rules
+
+- Gluestack components over raw RN primitives
+- Prefer props (`variant`, `size`, `space`) over redundant `className`
+- **Semantic tokens only**: `text-foreground`, `bg-primary`, `border-border` - no `gray-500`, `red-600`
+- Screens → `packages/ui/src/screens/`, not `apps/web/components`
+
+## Web (Next.js)
+
+- Run with **webpack**: `pnpm dev:web` (`next dev --webpack`)
+- Many primitives have `index.web.tsx` - HTML elements, not RN
+- Strip RN-only props before DOM spread (`multiline`, `onPress`, etc.)
+- **`Box` is `flex-col`** - add `flex-row` for horizontal layouts
+- Theme vars in `globals.css` **and** `config.ts` (SSR / no FOUC)
+
+## v4 only
+
+Use v4 CLI/docs for this project. Do not migrate to v5 unless explicitly requested.

@@ -1,0 +1,13 @@
+{
+  "name": "docs",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "docsify serve docs --port 3100",
+    "start": "docsify serve docs --port 3100",
+    "preview": "docsify serve docs --port 3100"
+  },
+  "devDependencies": {
+    "docsify-cli": "^4.4.3"
+  }
+}
